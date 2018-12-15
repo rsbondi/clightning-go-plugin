@@ -1,0 +1,1 @@
+An example clightning plugin in go
