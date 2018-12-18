@@ -9,6 +9,14 @@ import (
 )
 
 func jsonInit(msg json.RawMessage) interface{} {
+	var params RpcInitParams
+	if err := json.Unmarshal(msg, &params); err != nil {
+
+	}
+
+	// to make rpc calls to lightningd, connect socket to path below
+	// fmt.Sprintf("%s/%s", params.Configuration.LightningDir, params.Configuration.RpcFile)
+
 	return "ok"
 }
 
@@ -35,8 +43,9 @@ func jsonGetManifest(msg json.RawMessage) interface{} {
 func jsonHello(msg json.RawMessage) interface{} {
 	var s []string
 	if err := json.Unmarshal(msg, &s); err != nil {
-		//log.Println(err)
+
 	}
+
 	var name string
 	if len(s) > 0 {
 		name = s[0]

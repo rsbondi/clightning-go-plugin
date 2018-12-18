@@ -58,3 +58,12 @@ type RpcError struct {
 }
 
 type rpcfun func(json.RawMessage) interface{}
+
+type RpcInitConfig struct {
+	LightningDir string `json:"lightning-dir"`
+	RpcFile      string `json:"rpc-file"`
+}
+
+type RpcInitParams struct {
+	Configuration RpcInitConfig `json:"configuration"`
+}
