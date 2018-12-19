@@ -67,3 +67,11 @@ type RpcInitConfig struct {
 type RpcInitParams struct {
 	Configuration RpcInitConfig `json:"configuration"`
 }
+
+type RpcInfo struct {
+	Result RpcInfoResult
+}
+
+type RpcInfoResult struct {
+	Alias string `json:"alias"`
+}

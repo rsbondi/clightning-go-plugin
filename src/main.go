@@ -4,9 +4,12 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"net"
 	"os"
 	"time"
 )
+
+var alias string // this example uses node's alias if no name provided
 
 func jsonInit(msg json.RawMessage) interface{} {
 	var params RpcInitParams
@@ -14,8 +17,26 @@ func jsonInit(msg json.RawMessage) interface{} {
 
 	}
 
-	// to make rpc calls to lightningd, connect socket to path below
-	// fmt.Sprintf("%s/%s", params.Configuration.LightningDir, params.Configuration.RpcFile)
+	// example to make rpc calls to lightningd, connect socket from the following info provided in init call
+	// not the best code but illustrative
+	c, err := net.Dial("unix", fmt.Sprintf("%s/%s", params.Configuration.LightningDir, params.Configuration.RpcFile))
+	if err != nil {
+	}
+
+	c.Write([]byte(`{"jsonrpc":"2.0","id":"plugininit","method":"getinfo","params":[]}`))
+	buf := make([]byte, 1024)
+	n, err := c.Read(buf[:])
+	if err != nil {
+	}
+
+	var info RpcInfoResult
+	rpcinf := RpcInfo{
+		Result: info,
+	}
+	if err := json.Unmarshal(buf[0:n], &rpcinf); err != nil {
+	}
+
+	alias = rpcinf.Result.Alias
 
 	return "ok"
 }
@@ -50,7 +71,7 @@ func jsonHello(msg json.RawMessage) interface{} {
 	if len(s) > 0 {
 		name = s[0]
 	} else {
-		name = "unkonwn user"
+		name = alias
 	}
 
 	return fmt.Sprintf("Greetings from plugin %s", name)
