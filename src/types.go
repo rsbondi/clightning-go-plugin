@@ -64,8 +64,13 @@ type RpcInitConfig struct {
 	RpcFile      string `json:"rpc-file"`
 }
 
+type RpcOptions struct {
+	Greeting string `json:"greeting"`
+}
+
 type RpcInitParams struct {
 	Configuration RpcInitConfig `json:"configuration"`
+	Options       RpcOptions    `json:"options"`
 }
 
 type RpcInfo struct {

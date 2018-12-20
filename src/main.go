@@ -36,7 +36,7 @@ func jsonInit(msg json.RawMessage) interface{} {
 	if err := json.Unmarshal(buf[0:n], &rpcinf); err != nil {
 	}
 
-	alias = rpcinf.Result.Alias
+	alias = rpcinf.Result.Alias // or to use lightningd --greeting params.Options.Greeting
 
 	return "ok"
 }
