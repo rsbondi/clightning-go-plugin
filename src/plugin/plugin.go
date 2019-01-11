@@ -1,21 +1,40 @@
+// helper package for creating clightning plugins
 package plugin
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
+	"os"
+	"time"
 )
 
+// Each method used by or plugin has the actual code to create a response.
+// Also a description must be provided in the manifest, and is stored here.
+// Required methods(init, getmanifest) are stored in this format but the
+// description is not used.
 type PluginMethod struct {
-	Method      rpcfun
+	Method      Rpcfun
 	Description string
 }
 
+// This is the base struct for plugin creation.
+// Methods and options used by the plugin are stored here and used to create
+// the manifest.
+// Additional members RpcFilename and LightningDir are saved during call to
+// _init
+// Several helper mehtods are attached for initializing and running a plugin.
 type Plugin struct {
-	Methods map[string]PluginMethod
-	Options map[string]RpcInitOptions
+	Methods      map[string]PluginMethod
+	Options      map[string]RpcInitOptions
+	RpcFilename  string
+	LightningDir string
 }
 
-func (p *Plugin) AddMethod(name string, description string, method rpcfun) {
+// Add a method to the map of methods that will be called by your plugin.
+// The methods are called by name when requested by the clightning daemon.
+// The description is used in creating the response to `getmanifest`.
+func (p *Plugin) AddMethod(name string, description string, method Rpcfun) {
 	if _, exists := p.Methods[name]; exists {
 		panic(fmt.Sprintf("attempted to add method %s but it already exists"))
 	}
@@ -23,6 +42,9 @@ func (p *Plugin) AddMethod(name string, description string, method rpcfun) {
 	p.Methods[name] = PluginMethod{method, description}
 }
 
+// Add a option to the map of options that may be used by your plugin
+// as additional command line arguments to the lightningd daemon.
+// The map of options is used in creating the response to `getmanifest`.
 func (p *Plugin) AddOption(name string, defaultVal string, description string) {
 	if _, exists := p.Options[name]; exists {
 		panic(fmt.Sprintf("attempted to add option %s but it already exists"))
@@ -36,12 +58,32 @@ func (p *Plugin) AddOption(name string, defaultVal string, description string) {
 	}
 }
 
-func (p *Plugin) _init() {
+// This grabs common information that may optionally be used by your plugin.
+// LightningDir and RpcFilename are saved separately, and later can be used to
+// combined to make rpc calls to the daemon through a call to RpcFile()
+func (p *Plugin) _init(msg json.RawMessage) interface{} {
+	var params RpcInitParams
+	if err := json.Unmarshal(msg, &params); err != nil {
+	}
+
+	p.LightningDir = params.Configuration.LightningDir
+	p.RpcFilename = params.Configuration.RpcFile
+
+	return "ok"
 
 }
 
+// Returns a string of where to connect to the rpc interface of the daemon.
+// This can be useful for getting information from your node via rpc.
+func (p *Plugin) RpcFile() string {
+	return fmt.Sprintf("%s/%s", p.LightningDir, p.RpcFilename)
+}
+
+// Helper type for detecting presense of string in slice
 type strarr []string
 
+// Detect presense of string in slice.  Returns true if needle found in
+// haystack and false if not.
 func (haystack strarr) Contains(needle string) bool {
 	for _, n := range haystack {
 		if needle == n {
@@ -51,9 +93,11 @@ func (haystack strarr) Contains(needle string) bool {
 	return false
 }
 
+// Automatically generate a response to `getmanifest`
 func (p *Plugin) _getManifest(json.RawMessage) interface{} {
 	var methods []RpcMethods
 	skip := strarr{"init", "getmanifest"}
+
 	for k, m := range p.Methods {
 		if skip.Contains(k) {
 			continue
@@ -66,11 +110,52 @@ func (p *Plugin) _getManifest(json.RawMessage) interface{} {
 		methods = append(methods, met)
 	}
 
+	var options []RpcInitOptions
+	for _, o := range p.Options {
+		options = append(options, o)
+	}
+
 	return RpcInit{
 		Rpcmethods: methods,
+		Options:    options,
 	}
 }
 
+// Called from plugin instance to launch plugin. Additionally addes required
+// `getmanifest` and `init` methods.  It will loop continually, monitoring
+// stdin for commands and responding to requests.  The appropriate JSONRPC
+// formatted response will be sent to stdout filling in the result with the
+// response from the call to the mapped method.
 func (p *Plugin) Run() {
 	p.AddMethod("getmanifest", "", p._getManifest)
+	p.AddMethod("init", "", p._init)
+
+	reader := bufio.NewReader(os.Stdin)
+	writer := bufio.NewWriter(os.Stdout)
+	for {
+		var msg json.RawMessage
+		cmd := RpcCommand{
+			Params: &msg,
+		}
+		err := json.NewDecoder(reader).Decode(&cmd)
+
+		if err != nil {
+		}
+		m, ok := p.Methods[cmd.Method]
+		if ok {
+			method := m.Method
+			rpcResponse := RpcResult{
+				Id:      cmd.Id,
+				Jsonrpc: "2.0",
+				Result:  method(msg),
+			}
+
+			json.NewEncoder(writer).Encode(rpcResponse)
+			writer.Flush()
+			writer.Reset(os.Stdout)
+			reader.Reset(os.Stdin)
+		}
+		time.Sleep(50 * time.Millisecond) // TODO: Is this ok?  Maybe make parameter or let user handle in instance?
+	}
+
 }
