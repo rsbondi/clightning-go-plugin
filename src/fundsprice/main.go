@@ -1,59 +1,19 @@
 package main
 
 import (
-	"bufio"
+	"clplugin"
 	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
-	"os"
-	"time"
 )
 
 var fundinfo *FundPrice
-var rpcFile string
-
-func jsonInit(msg json.RawMessage) interface{} {
-	var params RpcInitParams
-	if err := json.Unmarshal(msg, &params); err != nil {
-	}
-
-	rpcFile = fmt.Sprintf("%s/%s", params.Configuration.LightningDir, params.Configuration.RpcFile)
-
-	fundinfo = NewFundPrice("https://apiv2.bitcoinaverage.com/indices/local/ticker/short",
-		params.Options.Crypto,
-		params.Options.Fiat)
-	return "ok"
-}
-
-func jsonGetManifest(msg json.RawMessage) interface{} {
-	response := RpcInit{
-		Options: []RpcInitOptions{
-			{
-				Name:        "crypto",
-				Type:        "string",
-				Default:     "BTC",
-				Description: "Ticker symbol for crypto currency.",
-			},
-			{
-				Name:        "fiat",
-				Type:        "string",
-				Default:     "USD",
-				Description: "Ticker symbol for fiat currency.",
-			},
-		},
-		Rpcmethods: []RpcMethods{
-			{
-				Name:        "fundprice",
-				Description: "Returns a summerized fund data with price",
-			},
-		},
-	}
-	return response
-}
+var plug *clplugin.Plugin
 
 func jsonFundPrice(msg json.RawMessage) interface{} {
-	c, err := net.Dial("unix", rpcFile)
+	fmt.Println(plug.RpcFile())
+	c, err := net.Dial("unix", plug.RpcFile())
 	if err != nil {
 	}
 
@@ -104,39 +64,37 @@ func jsonFundPrice(msg json.RawMessage) interface{} {
 	return totals
 }
 
+// Example plugin createion.
+// 1) create a new instance with `clplugin.NewPlugin()`
+// 2) create methods called by plugin
+// 3) add methods with call to `AddMethod`, you can call multiple times
+// 4) add any options used by plugin with calls to `AddOption`
+// 5) optionally handle additional initialization with `AddInit`(only once)
+//    this will help to get any command line arguments passed to the daemon.
+//    In this case, the "fiat" and "crypto" values
+// 6) Call `Run()`
 func main() {
-	commands := map[string]rpcfun{
-		"init":        jsonInit,
-		"fundprice":   jsonFundPrice,
-		"getmanifest": jsonGetManifest,
-	}
 
-	reader := bufio.NewReader(os.Stdin)
-	writer := bufio.NewWriter(os.Stdout)
-	for {
-		var msg json.RawMessage
-		cmd := RpcCommand{
-			Params: &msg,
-		}
-		err := json.NewDecoder(reader).Decode(&cmd)
+	plug = clplugin.NewPlugin()
+	plug.AddMethod("fundprice", "show fund summary with price", jsonFundPrice)
 
-		if err != nil {
-		}
-		method, ok := commands[cmd.Method]
-		if ok {
-			rpcResponse := RpcResult{
-				Id:      cmd.Id,
-				Jsonrpc: "2.0",
-				Result:  method(msg),
-			}
+	plug.AddOption("fiat", "USD", "Ticker symbol for fiat currency.")
+	plug.AddOption("crypto", "BTC", "Ticker symbol for crypto currency.")
 
-			json.NewEncoder(writer).Encode(rpcResponse)
-			writer.Flush()
-			writer.Reset(os.Stdout)
-			reader.Reset(os.Stdin)
+	plug.AddInit(func(msg json.RawMessage) {
+		var options RpcOptions
+		if err := json.Unmarshal(msg, &options); err != nil {
+			// additional handling
 		}
-		time.Sleep(50 * time.Millisecond)
-	}
+
+		fundinfo = NewFundPrice("https://apiv2.bitcoinaverage.com/indices/local/ticker/short",
+			options.Crypto,
+			options.Fiat)
+
+	})
+
+	plug.Run()
+
 }
 
 /*

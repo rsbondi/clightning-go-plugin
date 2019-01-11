@@ -1,5 +1,5 @@
 // helper package for creating clightning plugins
-package plugin
+package clplugin
 
 import (
 	"bufio"
@@ -29,6 +29,15 @@ type Plugin struct {
 	Options      map[string]RpcInitOptions
 	RpcFilename  string
 	LightningDir string
+	Init         InitCb
+}
+
+func NewPlugin() *Plugin {
+	p := &Plugin{
+		Methods: make(map[string]PluginMethod),
+		Options: make(map[string]RpcInitOptions),
+	}
+	return p
 }
 
 // Add a method to the map of methods that will be called by your plugin.
@@ -36,7 +45,7 @@ type Plugin struct {
 // The description is used in creating the response to `getmanifest`.
 func (p *Plugin) AddMethod(name string, description string, method Rpcfun) {
 	if _, exists := p.Methods[name]; exists {
-		panic(fmt.Sprintf("attempted to add method %s but it already exists"))
+		panic(fmt.Sprintf("attempted to add method %s but it already exists", name))
 	}
 
 	p.Methods[name] = PluginMethod{method, description}
@@ -47,7 +56,7 @@ func (p *Plugin) AddMethod(name string, description string, method Rpcfun) {
 // The map of options is used in creating the response to `getmanifest`.
 func (p *Plugin) AddOption(name string, defaultVal string, description string) {
 	if _, exists := p.Options[name]; exists {
-		panic(fmt.Sprintf("attempted to add option %s but it already exists"))
+		panic(fmt.Sprintf("attempted to add option %s but it already exists", name))
 	}
 
 	p.Options[name] = RpcInitOptions{
@@ -58,17 +67,32 @@ func (p *Plugin) AddOption(name string, defaultVal string, description string) {
 	}
 }
 
+// optionally used if additional initialization is needed
+type InitCb func(json.RawMessage)
+
+// Add additional initialization if needed.  Internally a call to `init` will
+// set the lightning directory and rpc file, but here you can do more if needed
+func (p *Plugin) AddInit(cb InitCb) {
+	p.Init = cb
+}
+
 // This grabs common information that may optionally be used by your plugin.
 // LightningDir and RpcFilename are saved separately, and later can be used to
-// combined to make rpc calls to the daemon through a call to RpcFile()
+// combined to make rpc calls to the daemon through a call to RpcFile().  If
+// additional initialization is needed, a call back is provided that is set in
+// AddInit(cb)
 func (p *Plugin) _init(msg json.RawMessage) interface{} {
 	var params RpcInitParams
 	if err := json.Unmarshal(msg, &params); err != nil {
+		panic(fmt.Sprintf("Plugin init failed: %s", err.Error))
 	}
 
 	p.LightningDir = params.Configuration.LightningDir
 	p.RpcFilename = params.Configuration.RpcFile
 
+	if p.Init != nil {
+		p.Init(msg)
+	}
 	return "ok"
 
 }
