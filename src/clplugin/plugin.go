@@ -84,7 +84,7 @@ func (p *Plugin) AddInit(cb InitCb) {
 func (p *Plugin) _init(msg json.RawMessage) interface{} {
 	var params RpcInitParams
 	if err := json.Unmarshal(msg, &params); err != nil {
-		panic(fmt.Sprintf("Plugin init failed: %s", err.Error))
+		panic(fmt.Sprintf("Plugin init failed: %s", err.Error()))
 	}
 
 	p.LightningDir = params.Configuration.LightningDir
