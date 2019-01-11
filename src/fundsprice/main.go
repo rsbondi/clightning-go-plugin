@@ -24,7 +24,7 @@ func jsonFundPrice(msg json.RawMessage) interface{} {
 	}
 
 	var funds RpcFundsResult
-	rpcfunds := RpcResult{
+	rpcfunds := clplugin.RpcResult{
 		Result: &funds,
 	}
 	if err := json.Unmarshal(buf[0:n], &rpcfunds); err != nil {
