@@ -3,7 +3,6 @@ package main
 import (
 	"clplugin"
 	"encoding/json"
-	"fmt"
 	"net"
 	"net/http"
 )
@@ -12,7 +11,6 @@ var fundinfo *FundPrice
 var plug *clplugin.Plugin
 
 func jsonFundPrice(msg json.RawMessage) interface{} {
-	fmt.Println(plug.RpcFile())
 	c, err := net.Dial("unix", plug.RpcFile())
 	if err != nil {
 	}
