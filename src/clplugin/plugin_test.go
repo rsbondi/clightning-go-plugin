@@ -81,3 +81,59 @@ func TestManifest(t *testing.T) {
 	}
 
 }
+
+func TestMethod(t *testing.T) {
+	p := NewPlugin()
+	p.AddMethod("dummy", "returns ok", func(msg json.RawMessage) interface{} { return "ok" })
+	out := p.Methods["dummy"].Method(json.RawMessage("[]")).(string)
+	want := "ok"
+	if out != want {
+		t.Errorf("error, expected %s and got %s", want, out)
+	}
+}
+
+func assertPanic(t *testing.T, f func()) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("The code did not panic")
+		}
+	}()
+	f()
+}
+
+func TestDupOption(t *testing.T) {
+	p := NewPlugin()
+	p.AddOption("fiat", "USD", "Ticker symbol for fiat currency.")
+	assertPanic(t, func() { p.AddOption("fiat", "USD", "Ticker symbol for fiat currency.") })
+}
+
+func TestDupMethod(t *testing.T) {
+	p := NewPlugin()
+	p.AddMethod("dummy", "no panic", func(msg json.RawMessage) interface{} { return "ok" })
+	assertPanic(t, func() { p.AddMethod("dummy", "panic", func(msg json.RawMessage) interface{} { return "ok" }) })
+}
+
+func TestRun(t *testing.T) { // TODO: how can I do the IO?
+	p := NewPlugin()
+	p.AddMethod("dummy", "returns ok", func(msg json.RawMessage) interface{} { return "ok" })
+	go func() {
+		p.Run()
+	}()
+}
+
+func TestInitCb(t *testing.T) {
+	p := NewPlugin()
+	p.AddOption("dummy", "ok", "test")
+	dummy := "bad"
+	p.AddInit(func(msg json.RawMessage) {
+		dummy = "good"
+	})
+	var dumb = `{}`
+	var init json.RawMessage = json.RawMessage(dumb)
+	p._init(init)
+	want := "good"
+	have := dummy
+	if have != want {
+		t.Errorf("Plugin init callback was not called, expected \"%s\", got \"%s\"", want, have)
+	}
+}
