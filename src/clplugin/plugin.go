@@ -176,12 +176,14 @@ func (p *Plugin) Run() {
 
 	reader := bufio.NewReader(os.Stdin)
 	writer := bufio.NewWriter(os.Stdout)
+	decoder := json.NewDecoder(reader)
+	encoder := json.NewEncoder(writer)
 	for {
 		var msg json.RawMessage
 		cmd := RpcCommand{
 			Params: &msg,
 		}
-		err := json.NewDecoder(reader).Decode(&cmd)
+		err := decoder.Decode(&cmd)
 
 		if err != nil {
 		}
@@ -194,7 +196,7 @@ func (p *Plugin) Run() {
 				Result:  method(msg),
 			}
 
-			json.NewEncoder(writer).Encode(rpcResponse)
+			encoder.Encode(rpcResponse)
 			writer.Flush()
 			writer.Reset(os.Stdout)
 			reader.Reset(os.Stdin)
