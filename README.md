@@ -9,4 +9,4 @@ show a summary of total channel funds and chain funds, additionally calling bitc
 
 ### plugin
 
-this directory(WIP) is an attempt to create a "class" for creating plugins, it will migrate the others to use it, similar to they python version.
+this directory is an attempt to create a package for creating plugins, similar to they python version provided in the clightning repo. I have migrated the fundsprice to use it.  The `hello` plugin will not use this as it better illustrates the commands and responses
