@@ -3,6 +3,7 @@ package main
 import (
 	"clplugin"
 	"encoding/json"
+	"fmt"
 	"net"
 	"net/http"
 )
@@ -15,10 +16,12 @@ func jsonFundPrice(msg json.RawMessage) interface{} {
 	if err != nil {
 	}
 
+	plug.Log("info", "Calling listfunds plugin method")
 	c.Write([]byte(`{"jsonrpc":"2.0","id":98,"method":"listfunds","params":[]}`))
 	buf := make([]byte, 1024)
 	n, err := c.Read(buf[:])
 	if err != nil {
+		plug.Log("warn", fmt.Sprintf("Calling listfunds plugin method failed: %s", err.Error()))
 	}
 
 	var funds RpcFundsResult
@@ -26,37 +29,43 @@ func jsonFundPrice(msg json.RawMessage) interface{} {
 		Result: &funds,
 	}
 	if err := json.Unmarshal(buf[0:n], &rpcfunds); err != nil {
+		plug.Log("warn", fmt.Sprintf("Parsing listfunds response failed: %s", err.Error()))
 	}
 
 	pricebuf := make([]byte, 1024)
 
+	plug.Log("info", fmt.Sprintf("Making request to bitcoinaverage.com for pricing info fiat=%s, crypto=%s", fundinfo.Fiat, fundinfo.Crypto))
 	response, err := http.Get(fundinfo.ApiRequest()) // https://apiv2.bitcoinaverage.com/indices/local/ticker/short?crypto=BTC&fiat=USD
 	n, err = response.Body.Read(pricebuf)
 
 	var m map[string]ApiResult
 	var totals Funds
 	errp := json.Unmarshal(pricebuf[0:n], &m)
-	if errp == nil {
-		price := m[fundinfo.ResponseSymbol()].Bid
+	var price float32
+	if errp != nil {
+		price = 0
+		plug.Log("warn", fmt.Sprintf("Parsing pai response failed: %s", errp.Error()))
+	} else {
+		price = m[fundinfo.ResponseSymbol()].Bid
+	}
 
-		var channelFunds int64 = 0
-		for _, ch := range funds.Channels {
-			channelFunds += ch.ChannelSat
-		}
-		var chainFunds int64 = 0
-		for _, o := range funds.Outputs {
-			chainFunds += o.Value
-		}
+	var channelFunds int64 = 0
+	for _, ch := range funds.Channels {
+		channelFunds += ch.ChannelSat
+	}
+	var chainFunds int64 = 0
+	for _, o := range funds.Outputs {
+		chainFunds += o.Value
+	}
 
-		conversion := FundConvert{
-			Fiat:    price,
-			Divisor: float32(100000000),
-		}
+	conversion := FundConvert{
+		Fiat:    price,
+		Divisor: float32(100000000),
+	}
 
-		totals = Funds{
-			Chain:   *NewFund(chainFunds, conversion),
-			Channel: *NewFund(channelFunds, conversion),
-		}
+	totals = Funds{
+		Chain:   *NewFund(chainFunds, conversion),
+		Channel: *NewFund(channelFunds, conversion),
 	}
 
 	return totals
@@ -80,6 +89,7 @@ func main() {
 	plug.AddOption("crypto", "BTC", "Ticker symbol for crypto currency.")
 
 	plug.AddInit(func(msg json.RawMessage) {
+		plug.Log("info", "Additional init options added for fundprice plugin")
 		var options RpcOptions
 		if err := json.Unmarshal(msg, &options); err != nil {
 			// additional handling

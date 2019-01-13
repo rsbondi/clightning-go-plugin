@@ -145,6 +145,26 @@ func (p *Plugin) _getManifest(json.RawMessage) interface{} {
 	}
 }
 
+// Function to pass log messages through to the daemon
+// Possible levels, info, warn, debug
+func (p *Plugin) Log(level string, msg string) {
+	writer := bufio.NewWriter(os.Stdout)
+	log := RpcLog{
+		Level:   level,
+		Message: msg,
+	}
+	rpc := LogCommand{
+		Method:  "log",
+		Jsonrpc: "2.0",
+		Params:  log,
+	}
+
+	json.NewEncoder(writer).Encode(rpc)
+	writer.Flush()
+	writer.Reset(os.Stdout)
+
+}
+
 // Called from plugin instance to launch plugin. Additionally addes required
 // `getmanifest` and `init` methods.  It will loop continually, monitoring
 // stdin for commands and responding to requests.  The appropriate JSONRPC

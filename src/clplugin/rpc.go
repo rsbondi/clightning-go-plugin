@@ -58,3 +58,16 @@ type RpcInitConfig struct {
 type RpcInitParams struct {
 	Configuration RpcInitConfig `json:"configuration"`
 }
+
+// Plugin log parameters
+type RpcLog struct {
+	Level   string `json:"level"`
+	Message string `json:"message"`
+}
+
+// This is how to pass log info to the daemon
+type LogCommand struct {
+	Jsonrpc string `json:"jsonrpc"`
+	Method  string `json:"method"`
+	Params  RpcLog `json:"params"`
+}
