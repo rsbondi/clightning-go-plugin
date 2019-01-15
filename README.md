@@ -25,3 +25,5 @@ Usage
     })
     p.Run()
 ```
+
+[Here](https://github.com/niftynei/glightning) is a much more complete effort of what I intended to achieve, I suggest using it and see no need for me to continue with a duplicate effort
