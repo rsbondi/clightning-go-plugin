@@ -1,0 +1,11 @@
+### user:password
+
+POST http://localhost:9222
+Authorization: Basic dXNlcjpwYXNzd29yZA==
+
+{
+    "jsonrpc": 2.0,
+    "method": "listinvoices",
+    "id": "abc",
+    "params":[]
+}

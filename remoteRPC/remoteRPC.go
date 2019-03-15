@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"github.com/niftynei/glightning/glightning"
 	"io"
@@ -8,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strings"
 )
 
 var plugin *glightning.Plugin
@@ -20,6 +23,12 @@ type RemoteRPC struct {
 	Host     string
 	Port     string
 	RPCFile  string
+}
+
+type RpcResult struct {
+	Jsonrpc string      `json:"jsonrpc"`
+	Id      int         `json:"id"`
+	Result  interface{} `json:"result"`
 }
 
 func NewRemoteRPC(options map[string]string) *RemoteRPC {
@@ -42,23 +51,45 @@ func main() {
 	}
 }
 
+func auth(req *http.Request) bool {
+	authHeader := strings.SplitN(req.Header.Get("Authorization"), " ", 2)
+
+	if len(authHeader) != 2 || authHeader[0] != "Basic" {
+		return false
+	}
+
+	basic, _ := base64.StdEncoding.DecodeString(authHeader[1])
+	userpass := strings.SplitN(string(basic), ":", 2)
+
+	if userpass[0] == remote.Username && userpass[1] == remote.Password {
+		return true
+	}
+	return false
+}
+
 func handleRequest(w http.ResponseWriter, req *http.Request) {
+	if !auth(req) {
+		// TODO: id
+		rpcerr := &RpcResult{
+			Jsonrpc: "2.0",
+			Result:  "Not Authorized",
+		}
+		rpcResponse, _ := json.Marshal(rpcerr)
+		w.Write(rpcResponse)
+		return
+	}
 	local, err := net.Dial("unix", remote.RPCFile)
 	if err != nil {
 		log.Fatal("unable to connect to clightning")
 	}
 	defer local.Close()
 
-	var http2unix = make([]byte, 1024)
 	var unix2http = make([]byte, 1024)
 	var responseBuf = make([]byte, 0)
-	b, errr := req.Body.Read(http2unix)
-	if errr != nil && errr != io.EOF {
-		log.Printf("Read error: %s %d", http2unix, b)
-	}
-	_, errw := local.Write(http2unix)
-	if errw != nil {
-		log.Printf("Write error: %s", errw)
+
+	_, errc := io.Copy(local, req.Body)
+	if errc != nil && errc != io.EOF {
+		log.Printf("Copy error: %s", errc)
 	}
 
 	for {
