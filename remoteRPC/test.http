@@ -1,7 +1,7 @@
 ### user:password
 
-POST http://localhost:9222
-Authorization: Basic dXNlcjpwYXNzd29yZA==
+POST http://127.0.0.1:9222
+Authorization: Basic cmVtb3RldXNlcjpyZW1vdGVwYXNz
 
 {
     "jsonrpc": 2.0,

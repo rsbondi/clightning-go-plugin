@@ -1,3 +1,6 @@
 .vscode
 *.a
 remote_plugin
+cert.pem
+key.pem
+

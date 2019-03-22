@@ -111,8 +111,9 @@ func handleRequest(w http.ResponseWriter, req *http.Request) {
 func registerOptions(p *glightning.Plugin) {
 	p.RegisterOption(glightning.NewOption("remote-user", "User used for authentication", "remoteuser"))
 	p.RegisterOption(glightning.NewOption("remote-password", "Password used for authentication", "remotepass"))
-	p.RegisterOption(glightning.NewOption("remote-host", "Host to listen for remote requests", "0.0.0.0")) // does this option make sense?
 	p.RegisterOption(glightning.NewOption("remote-port", "Port to listen for remote requests", "9222"))
+	p.RegisterOption(glightning.NewOption("remote-cert", "Server certificate", " ")) // crashes on empty
+	p.RegisterOption(glightning.NewOption("remote-key", "Server key", " "))
 }
 
 func onInit(plugin *glightning.Plugin, options map[string]string, config *glightning.Config) {
@@ -121,5 +122,9 @@ func onInit(plugin *glightning.Plugin, options map[string]string, config *glight
 	remote = NewRemoteRPC(options)
 	http.HandleFunc("/", handleRequest)
 
-	log.Fatal(http.ListenAndServe(remote.Host+":"+remote.Port, nil))
+	if options["remote-cert"] != " " {
+		log.Fatal(http.ListenAndServeTLS(":"+remote.Port, options["remote-cert"], options["remote-key"], nil))
+	} else {
+		log.Fatal(http.ListenAndServe(":"+remote.Port, nil))
+	}
 }

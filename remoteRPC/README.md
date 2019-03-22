@@ -16,6 +16,10 @@ specify alternate port
 
 will listen on localhost:1234
 
+`lightningd --plugin=path/to/plugin --remote-cert=PATH/TO/CERT --remote-key=PATH/TO/KEY ...`
+
+will serve https
+
 #### Limitation
 
 uses http passthrough to unix socket, use with `wait...` commands only work within the request timeout
