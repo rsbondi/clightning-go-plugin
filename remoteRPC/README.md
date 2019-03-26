@@ -1,6 +1,6 @@
 ### remoteRPC
 
-This plugin allows you to access all RPC commands using HTTP instead of the default of unix socket.  Not encrypted use within local secure network only.
+This plugin allows you to access all RPC commands using HTTP instead of the default of unix socket.  Can use encrypted or unencrypted within local secure network.
 
 #### Usage
 
