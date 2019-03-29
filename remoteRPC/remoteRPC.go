@@ -13,6 +13,8 @@ import (
 	"strings"
 )
 
+const VERSION = "0.0.1"
+
 var plugin *glightning.Plugin
 var remote *RemoteRPC
 var local net.Conn
@@ -105,6 +107,7 @@ func handleRequest(w http.ResponseWriter, req *http.Request) {
 			break
 		}
 	}
+	w.Header().Set("content-type", "application/json; charset=utf-8")
 	w.Write(responseBuf)
 }
 
@@ -117,7 +120,7 @@ func registerOptions(p *glightning.Plugin) {
 }
 
 func onInit(plugin *glightning.Plugin, options map[string]string, config *glightning.Config) {
-	log.Printf("successfully initialized, listening on port %s\n", options["remote-port"])
+	log.Printf("versiion: "+VERSION+" initialized for port %s\n", options["remote-port"])
 	options["rpc-file"] = fmt.Sprintf("%s/%s", config.LightningDir, config.RpcFile)
 	remote = NewRemoteRPC(options)
 	http.HandleFunc("/", handleRequest)
