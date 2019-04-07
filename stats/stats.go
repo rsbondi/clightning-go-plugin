@@ -8,9 +8,7 @@ import (
 	"os"
 )
 
-type Forwards struct {
-	Channel string
-}
+type Forwards struct{}
 
 type ForwardSplit struct {
 	Chins        interface{} `json:"channels_in"`
