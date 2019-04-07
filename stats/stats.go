@@ -13,17 +13,18 @@ type Forwards struct {
 }
 
 type ForwardSplit struct {
-	Chins        interface{} `json:"chins"`
-	Chouts       interface{} `json:"chouts"`
+	Chins        interface{} `json:"channels_in"`
+	Chouts       interface{} `json:"channels_out"`
 	TotalFunding uint64      `json:"totalfunding"`
 	TotalFees    uint64      `json:"totalfees"`
-	Percent      float64     `json:"totalpercent"`
+	PercentGain  float64     `json:"total_percent_gain"`
 }
 
 type ForwardChan struct {
-	MsatForwarded uint64
-	Funding       uint64
-	Percent       float64
+	MsatForwarded uint64  `json:"msat"`
+	Funding       uint64  `json:"funding"`
+	PercentGain   float64 `json:"percent_gain"`
+	PercentPie    float64 `json:"percent_pie"`
 }
 
 var lightning *glightning.Lightning
@@ -71,28 +72,48 @@ func (z *Forwards) Call() (jrpc2.Result, error) {
 		chouts[f.OutChannel] = append(chouts[f.OutChannel], f)
 	}
 
-	chinsout := make(map[string]ForwardChan, 0)
-	choutsout := make(map[string]ForwardChan, 0)
+	chinsfinal := make(map[string]*ForwardChan, 0)
+	choutsfinal := make(map[string]*ForwardChan, 0)
 
+	var totalfees uint64
 	for k, _ := range chins {
 		fees := uint64(0)
 		for _, f := range chins[k] {
 			fees += f.Fee
 		}
-		chinsout[k] = ForwardChan{fees, funds[k], 0}
+		totalfees += fees
+		chinsfinal[k] = &ForwardChan{
+			MsatForwarded: fees,
+			Funding:       funds[k],
+			PercentGain:   0,
+			PercentPie:    0,
+		}
 	}
 
-	var totalfees uint64
+	for k, f := range chinsfinal { // we have total fees now, so calc pie
+		chinsfinal[k].PercentPie = float64(f.MsatForwarded) / float64(totalfees)
+	}
+
 	for k, _ := range chouts {
 		fees := uint64(0)
 		for _, f := range chouts[k] {
 			fees += f.Fee
 		}
-		totalfees += fees
-		choutsout[k] = ForwardChan{fees, funds[k], float64(funds[k]+fees) / float64(funds[k])}
+		choutsfinal[k] = &ForwardChan{
+			MsatForwarded: fees,
+			Funding:       funds[k],
+			PercentGain:   float64(fees) / float64(funds[k]),
+			PercentPie:    float64(fees) / float64(totalfees),
+		}
 	}
 
-	c := ForwardSplit{chinsout, choutsout, totalfunding, totalfees, float64(totalfunding+totalfees) / float64(totalfunding)}
+	c := ForwardSplit{
+		Chins:        chinsfinal,
+		Chouts:       choutsfinal,
+		TotalFunding: totalfunding,
+		TotalFees:    totalfees,
+		PercentGain:  float64(totalfees) / float64(totalfunding),
+	}
 
 	return c, nil
 }
