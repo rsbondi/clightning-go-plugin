@@ -8,5 +8,11 @@ This plugin allows you to access all RPC commands using HTTP instead of the defa
 
 [more](remoteRPC/README.md)
 
+### stats
+
+Shows some additional stats, currently shows forwarding info by channel, amount earned, percent gain etc..
+
+[more](stats/README.md)
+
 
 _The `old` directory was my initial attempt at creating a plugin module for clightning but glightning is a much more complete effort of what I intended to achieve, I suggest using it and see no need for me to continue with a duplicate effort, but keeping for reference examples_
