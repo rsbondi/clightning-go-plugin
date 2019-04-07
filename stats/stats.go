@@ -13,13 +13,17 @@ type Forwards struct {
 }
 
 type ForwardSplit struct {
-	Chins  interface{} `json:"chins"`
-	Chouts interface{} `json:"chouts"`
+	Chins        interface{} `json:"chins"`
+	Chouts       interface{} `json:"chouts"`
+	TotalFunding uint64      `json:"totalfunding"`
+	TotalFees    uint64      `json:"totalfees"`
+	Percent      float64     `json:"totalpercent"`
 }
 
 type ForwardChan struct {
 	MsatForwarded uint64
 	Funding       uint64
+	Percent       float64
 }
 
 var lightning *glightning.Lightning
@@ -41,7 +45,9 @@ func (z *Forwards) Call() (jrpc2.Result, error) {
 		return fmt.Sprintf("forward: %s\n", err.Error()), nil
 	}
 
-	// Peer.Id Peer.Channels[].FundingAllocations[id] = msat Peer.Channels[].ShortChannelId
+	if len(forwards) == 0 {
+		return "no forwarding information available", nil
+	}
 
 	peers, err := lightning.ListPeers()
 	if err != nil {
@@ -49,23 +55,14 @@ func (z *Forwards) Call() (jrpc2.Result, error) {
 	}
 
 	funds := make(map[string]uint64, 0)
+	var totalfunding uint64
 	for _, p := range peers {
 		for _, c := range p.Channels {
 			funds[c.ShortChannelId] = c.FundingAllocations[myid]
+			totalfunding += c.FundingAllocations[myid]
 		}
 	}
 
-	/*
-		type Forwarding struct {
-			InChannel       string `json:"in_channel"`
-			OutChannel      string `json:"out_channel"`
-			MilliSatoshiIn  uint64 `json:"in_msatoshi"`
-			MilliSatoshiOut uint64 `json:"out_msatoshi"`
-			Fee             uint64 `json:"fee"`
-			Status          string `json:"status"`
-		}
-		x = append(a,b...)
-	*/
 	chins := make(map[string][]glightning.Forwarding, 0)
 	chouts := make(map[string][]glightning.Forwarding, 0)
 	for _, f := range forwards {
@@ -82,18 +79,20 @@ func (z *Forwards) Call() (jrpc2.Result, error) {
 		for _, f := range chins[k] {
 			fees += f.Fee
 		}
-		chinsout[k] = ForwardChan{fees, funds[k]}
+		chinsout[k] = ForwardChan{fees, funds[k], 0}
 	}
 
+	var totalfees uint64
 	for k, _ := range chouts {
 		fees := uint64(0)
 		for _, f := range chouts[k] {
 			fees += f.Fee
 		}
-		choutsout[k] = ForwardChan{fees, funds[k]}
+		totalfees += fees
+		choutsout[k] = ForwardChan{fees, funds[k], float64(funds[k]+fees) / float64(funds[k])}
 	}
 
-	c := ForwardSplit{chinsout, choutsout}
+	c := ForwardSplit{chinsout, choutsout, totalfunding, totalfees, float64(totalfunding+totalfees) / float64(totalfunding)}
 
 	return c, nil
 }
@@ -139,7 +138,5 @@ func onInit(plugin *glightning.Plugin, options map[string]string, config *glight
 	if err != nil {
 		log.Printf("forward: %s\n", err.Error())
 	}
-
 	myid = info.Id
-
 }
