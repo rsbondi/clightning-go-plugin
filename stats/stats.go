@@ -15,14 +15,16 @@ type ForwardSplit struct {
 	Chouts       interface{} `json:"channels_out"`
 	TotalFunding uint64      `json:"totalfunding"`
 	TotalFees    uint64      `json:"totalfees"`
+	TotalForward uint64      `json:"totalforward"`
 	PercentGain  float64     `json:"total_percent_gain"`
 }
 
 type ForwardChan struct {
-	MsatForwarded uint64  `json:"msat"`
-	Funding       uint64  `json:"funding"`
-	PercentGain   float64 `json:"percent_gain"`
-	PercentPie    float64 `json:"percent_pie"`
+	MsatFees    uint64  `json:"fee_msat"`
+	MsatForward uint64  `json:"forward_msat"`
+	Funding     uint64  `json:"funding"`
+	PercentGain float64 `json:"percent_gain"`
+	PercentPie  float64 `json:"percent_pie"`
 }
 
 var lightning *glightning.Lightning
@@ -74,34 +76,42 @@ func (z *Forwards) Call() (jrpc2.Result, error) {
 	choutsfinal := make(map[string]*ForwardChan, 0)
 
 	var totalfees uint64
+	var totalforwards uint64
 	for k, _ := range chins {
 		fees := uint64(0)
+		forwarded := uint64(0)
 		for _, f := range chins[k] {
 			fees += f.Fee
+			forwarded += f.MilliSatoshiOut
 		}
 		totalfees += fees
+		totalforwards += forwarded
 		chinsfinal[k] = &ForwardChan{
-			MsatForwarded: fees,
-			Funding:       funds[k],
-			PercentGain:   0,
-			PercentPie:    0,
+			MsatFees:    fees,
+			MsatForward: forwarded,
+			Funding:     funds[k],
+			PercentGain: 0,
+			PercentPie:  0,
 		}
 	}
 
 	for k, f := range chinsfinal { // we have total fees now, so calc pie
-		chinsfinal[k].PercentPie = float64(f.MsatForwarded) / float64(totalfees)
+		chinsfinal[k].PercentPie = float64(f.MsatFees) / float64(totalfees)
 	}
 
 	for k, _ := range chouts {
 		fees := uint64(0)
+		forwarded := uint64(0)
 		for _, f := range chouts[k] {
 			fees += f.Fee
+			forwarded += f.MilliSatoshiOut
 		}
 		choutsfinal[k] = &ForwardChan{
-			MsatForwarded: fees,
-			Funding:       funds[k],
-			PercentGain:   float64(fees) / float64(funds[k]),
-			PercentPie:    float64(fees) / float64(totalfees),
+			MsatFees:    fees,
+			MsatForward: forwarded,
+			Funding:     funds[k],
+			PercentGain: float64(fees) / float64(funds[k]),
+			PercentPie:  float64(fees) / float64(totalfees),
 		}
 	}
 
@@ -110,6 +120,7 @@ func (z *Forwards) Call() (jrpc2.Result, error) {
 		Chouts:       choutsfinal,
 		TotalFunding: totalfunding,
 		TotalFees:    totalfees,
+		TotalForward: totalforwards,
 		PercentGain:  float64(totalfees) / float64(totalfunding),
 	}
 
