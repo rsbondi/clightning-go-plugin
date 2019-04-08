@@ -20,11 +20,13 @@ type ForwardSplit struct {
 }
 
 type ForwardChan struct {
-	MsatFees    uint64  `json:"fee_msat"`
-	MsatForward uint64  `json:"forward_msat"`
-	Funding     uint64  `json:"funding"`
-	PercentGain float64 `json:"percent_gain"`
-	PercentPie  float64 `json:"percent_pie"`
+	MsatFees      uint64  `json:"fee_msat"`
+	MsatForward   uint64  `json:"forward_msat"`
+	FailedFees    uint64  `json:"fee_fail"`
+	FailedForward uint64  `json:"forward_fail"`
+	Funding       uint64  `json:"funding"`
+	PercentGain   float64 `json:"percent_gain"`
+	PercentPie    float64 `json:"percent_pie"`
 }
 
 var lightning *glightning.Lightning
@@ -66,56 +68,25 @@ func (z *Forwards) Call() (jrpc2.Result, error) {
 
 	chins := make(map[string][]glightning.Forwarding, 0)
 	chouts := make(map[string][]glightning.Forwarding, 0)
+	var totalfees uint64
+	var totalforwards uint64
 	for _, f := range forwards {
 		chins[f.InChannel] = append(chins[f.InChannel], f)
 		chouts[f.OutChannel] = append(chouts[f.OutChannel], f)
+		if f.Status == "settled" {
+			totalfees += f.Fee
+			totalforwards += f.MilliSatoshiOut
+		}
 	}
 
 	chinsfinal := make(map[string]*ForwardChan, 0)
 	choutsfinal := make(map[string]*ForwardChan, 0)
 
-	var totalfees uint64
-	var totalforwards uint64
-	for k, _ := range chins {
-		fees := uint64(0)
-		forwarded := uint64(0)
-		for _, f := range chins[k] {
-			if f.Status == "settled" {
-				fees += f.Fee
-				forwarded += f.MilliSatoshiOut
-			} // TODO: track failed forward and fees
-		}
-		totalfees += fees
-		totalforwards += forwarded
-		chinsfinal[k] = &ForwardChan{
-			MsatFees:    fees,
-			MsatForward: forwarded,
-			Funding:     funds[k],
-			PercentGain: 0,
-			PercentPie:  0,
-		}
-	}
+	processChannels(chins, chinsfinal, funds, totalfees)
+	processChannels(chouts, choutsfinal, funds, totalfees)
 
 	for k, f := range chinsfinal { // we have total fees now, so calc pie
 		chinsfinal[k].PercentPie = float64(f.MsatFees) / float64(totalfees)
-	}
-
-	for k, _ := range chouts {
-		fees := uint64(0)
-		forwarded := uint64(0)
-		for _, f := range chouts[k] {
-			if f.Status == "settled" {
-				fees += f.Fee
-				forwarded += f.MilliSatoshiOut
-			} // TODO: track failed forward and fees
-		}
-		choutsfinal[k] = &ForwardChan{
-			MsatFees:    fees,
-			MsatForward: forwarded,
-			Funding:     funds[k],
-			PercentGain: float64(fees) / float64(funds[k]),
-			PercentPie:  float64(fees) / float64(totalfees),
-		}
 	}
 
 	c := ForwardSplit{
@@ -128,6 +99,42 @@ func (z *Forwards) Call() (jrpc2.Result, error) {
 	}
 
 	return c, nil
+}
+
+func processChannels(src map[string][]glightning.Forwarding,
+	dest map[string]*ForwardChan,
+	funds map[string]uint64,
+	totalfees uint64) {
+	for k, _ := range src {
+		fees := uint64(0)
+		forwarded := uint64(0)
+		feesfail := uint64(0)
+		forwardedfail := uint64(0)
+		for _, f := range src[k] {
+			if f.Status == "settled" {
+				fees += f.Fee
+				forwarded += f.MilliSatoshiOut
+			} else {
+				feesfail += f.Fee
+				forwardedfail += f.MilliSatoshiOut
+			}
+		}
+		var gain float64
+		if funds[k] > 0 {
+			gain = float64(fees) / float64(funds[k])
+
+		}
+
+		dest[k] = &ForwardChan{
+			MsatFees:      fees,
+			MsatForward:   forwarded,
+			FailedFees:    feesfail,
+			FailedForward: forwardedfail,
+			Funding:       funds[k],
+			PercentGain:   gain,
+			PercentPie:    float64(fees) / float64(totalfees),
+		}
+	}
 }
 
 var plugin *glightning.Plugin
