@@ -85,10 +85,6 @@ func (z *Forwards) Call() (jrpc2.Result, error) {
 	processChannels(chins, chinsfinal, funds, totalfees)
 	processChannels(chouts, choutsfinal, funds, totalfees)
 
-	for k, f := range chinsfinal { // we have total fees now, so calc pie
-		chinsfinal[k].PercentPie = float64(f.MsatFees) / float64(totalfees)
-	}
-
 	c := ForwardSplit{
 		Chins:        chinsfinal,
 		Chouts:       choutsfinal,
