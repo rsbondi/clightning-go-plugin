@@ -67,7 +67,6 @@ func (z *Forwards) Call() (jrpc2.Result, error) {
 	chins := make(map[string][]glightning.Forwarding, 0)
 	chouts := make(map[string][]glightning.Forwarding, 0)
 	for _, f := range forwards {
-		log.Printf("forward: %s\n", f)
 		chins[f.InChannel] = append(chins[f.InChannel], f)
 		chouts[f.OutChannel] = append(chouts[f.OutChannel], f)
 	}
@@ -81,8 +80,10 @@ func (z *Forwards) Call() (jrpc2.Result, error) {
 		fees := uint64(0)
 		forwarded := uint64(0)
 		for _, f := range chins[k] {
-			fees += f.Fee
-			forwarded += f.MilliSatoshiOut
+			if f.Status == "settled" {
+				fees += f.Fee
+				forwarded += f.MilliSatoshiOut
+			} // TODO: track failed forward and fees
 		}
 		totalfees += fees
 		totalforwards += forwarded
@@ -103,8 +104,10 @@ func (z *Forwards) Call() (jrpc2.Result, error) {
 		fees := uint64(0)
 		forwarded := uint64(0)
 		for _, f := range chouts[k] {
-			fees += f.Fee
-			forwarded += f.MilliSatoshiOut
+			if f.Status == "settled" {
+				fees += f.Fee
+				forwarded += f.MilliSatoshiOut
+			} // TODO: track failed forward and fees
 		}
 		choutsfinal[k] = &ForwardChan{
 			MsatFees:    fees,
