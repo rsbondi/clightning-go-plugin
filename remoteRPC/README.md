@@ -2,6 +2,8 @@
 
 This plugin allows you to access all RPC commands using HTTP instead of the default of unix socket.  Can use encrypted or unencrypted within local secure network.
 
+[linux-x64 binary](https://moonbreeze.richardbondi.net/remote_plugin)
+
 #### Usage
 
 use defaults
