@@ -1,10 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/niftynei/glightning/glightning"
 	"github.com/niftynei/glightning/jrpc2"
+	"html/template"
 	"log"
+	"math"
 	"os"
 )
 
@@ -29,6 +32,21 @@ type ForwardChan struct {
 	PercentPie    float64 `json:"percent_pie"`
 }
 
+type ChanSegment struct {
+	ForwardChan
+	Color string
+	Px    float64
+	Py    float64
+	X     float64
+	Y     float64
+	Flag  uint
+}
+
+type ChannelViews struct {
+	Ins  map[string]ChanSegment
+	Outs map[string]ChanSegment
+}
+
 var lightning *glightning.Lightning
 var myid string
 
@@ -41,7 +59,113 @@ func (f *Forwards) Name() string {
 }
 
 func (z *Forwards) Call() (jrpc2.Result, error) {
+	return forwardSummary()
+}
 
+type ForwardView struct{}
+
+func (f *ForwardView) New() interface{} {
+	return &ForwardView{}
+}
+
+func (f *ForwardView) Name() string {
+	return "forwardview"
+}
+
+var palette = []string{"#f0f0f0", "#c5d5c5", "#9fa9a3", "#e3e0cc", "#eaece5", "#b2c2bf",
+	"#c0ded9", "#3b3a30", "#e4d1d1", "#b9b0b0", "#d9ecd0", "#77a8a8", "#f0efef",
+	"#ddeedd", "#c2d4dd", "#b0aac0"}
+
+func processView(c map[string]*ForwardChan, index int) map[string]ChanSegment {
+	view := make(map[string]ChanSegment)
+	px := math.Cos(0)
+	py := math.Sin(0)
+	var rotation float64 = 0
+
+	for ch, fwd := range c {
+		color := palette[index%len(palette)]
+		rotation += fwd.PercentPie
+		x := math.Cos(2 * math.Pi * rotation)
+		y := math.Sin(2 * math.Pi * rotation)
+		var f uint = 0
+		if fwd.PercentPie > .5 {
+			f = 1
+		}
+		chv := &ChanSegment{
+			ForwardChan: *fwd,
+			Color:       color,
+			Px:          px,
+			Py:          py,
+			X:           x,
+			Y:           y,
+			Flag:        f,
+		}
+		view[ch] = *chv
+		px = x
+		py = y
+		index++
+	}
+
+	return view
+}
+
+func (z *ForwardView) Call() (jrpc2.Result, error) {
+	html := `<body>
+    <div>
+        <h3>Incoming Channels Fees</h3>
+        {{range .Ins}}
+        <div style="clear: both; width: 100%; text-align: left;">
+            <div style="width: 20px; height: 20px; float: left; background-color: {{.Color}};"></div>
+            <div style="float: left; margin-left: 10px; width: 150px;">3716x12x0</div>
+            <div style="float: left;">83 msat</div>
+        </div>
+        {{end}}
+        <svg viewBox="-1 -1 2 2" style="transform: rotate(-0.25turn)">
+            {{range .Ins}}
+            <path d="M {{.Px}} {{.Py}} A 1 1 0 {{.Flag}} 1 {{.X}} {{.Y}} L 0 0" fill="{{.Color}}"></path>
+            {{end}}
+        </svg>
+    </div>
+    <div>
+        <h3>Outgoing Channels Fees</h3>
+       {{range .Outs}}        
+        <div style="clear: both; width: 100%; text-align: left;">
+            <div style="width: 20px; height: 20px; float: left; background-color: {{.Color}};"></div>
+            <div style="float: left; margin-left: 10px; width: 150px;">3716x12x0</div>
+            <div style="float: left;">83 msat</div>
+        </div>
+        {{end}}
+        <svg viewBox="-1 -1 2 2" style="transform: rotate(-0.25turn)">
+            {{range .Outs}}
+            <path d="M {{.Px}} {{.Py}} A 1 1 0 {{.Flag}} 1 {{.X}} {{.Y}} L 0 0" fill="{{.Color}}"></path>
+            {{end}}
+        </svg>
+    </div>
+</body>`
+	sum, err := forwardSummary()
+	if err != nil {
+		return fmt.Sprintf("forward: %s\n", err.Error()), nil
+	}
+
+	view := &ChannelViews{}
+	s := sum.(ForwardSplit)
+
+	c := s.Chins.(map[string]*ForwardChan)
+	index := 0
+	view.Ins = processView(c, index)
+
+	c = s.Chouts.(map[string]*ForwardChan)
+	index = len(c) % len(palette)
+	view.Outs = processView(c, index)
+
+	tmpl, err := template.New("view").Parse(html)
+	var b bytes.Buffer
+	err = tmpl.Execute(&b, view)
+
+	return b.String(), nil
+}
+
+func forwardSummary() (interface{}, error) {
 	forwards, err := lightning.ListForwards()
 
 	if err != nil {
@@ -152,18 +276,15 @@ func registerOptions(p *glightning.Plugin) {
 }
 
 func registerMethods(p *glightning.Plugin) {
-	rpcForwards := glightning.NewRpcMethod(&Forwards{}, "A bunch of stuff about {channel}!")
-	rpcForwards.LongDesc = `Various metrics about routing `
-	rpcForwards.Usage = "[channel]"
+	rpcForwards := glightning.NewRpcMethod(&Forwards{}, "A bunch of stuff about forwarding!")
+	rpcForwards.LongDesc = `Various metrics about forwarding `
+	rpcForwards.Usage = " "
 	p.RegisterMethod(rpcForwards)
-}
 
-func OnConnect(c *glightning.ConnectEvent) {
-	log.Printf("connect called: id %s at %s:%d", c.PeerId, c.Address.Addr, c.Address.Port)
-}
-
-func OnDisconnect(d *glightning.DisconnectEvent) {
-	log.Printf("disconnect called for %s\n", d.PeerId)
+	rpcForwardView := glightning.NewRpcMethod(&ForwardView{}, "View of stuff about forwarding!")
+	rpcForwardView.LongDesc = `View of various metrics about forwarding `
+	rpcForwardView.Usage = " "
+	p.RegisterMethod(rpcForwardView)
 }
 
 func onInit(plugin *glightning.Plugin, options map[string]string, config *glightning.Config) {

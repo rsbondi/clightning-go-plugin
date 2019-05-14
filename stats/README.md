@@ -2,9 +2,12 @@ This plugin takes no additional options so to use, start `lightningd` with `--pl
 
 `lightningd --plugin=path/to/plugin`
 
-This will add `forwardstats` cli/rpc command that takes no arguments
+This will add `forwardstats` and `forwardview` cli/rpc commands that takes no arguments
 
-It will return something like the following
+`forwardview` returns a simple, inflexible html view with pie charts and fee info, mainly
+geared toward [a mobile app](https://github.com/rsbondi/clightning-mobile) customization
+
+`forwardstats` will return something like the following
 
 ```json
 {
