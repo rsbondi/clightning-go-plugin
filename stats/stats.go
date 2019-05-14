@@ -113,11 +113,11 @@ func (z *ForwardView) Call() (jrpc2.Result, error) {
 	html := `<body>
     <div>
         <h3>Incoming Channels Fees</h3>
-        {{range .Ins}}
+        {{range $ch, $data := .Ins}}
         <div style="clear: both; width: 100%; text-align: left;">
-            <div style="width: 20px; height: 20px; float: left; background-color: {{.Color}};"></div>
-            <div style="float: left; margin-left: 10px; width: 150px;">3716x12x0</div>
-            <div style="float: left;">83 msat</div>
+            <div style="width: 20px; height: 20px; float: left; background-color: {{$data.Color}};"></div>
+            <div style="float: left; margin-left: 10px; width: 150px;">{{$ch}}</div>
+            <div style="float: left;">{{$data.MsatFees}}</div>
         </div>
         {{end}}
         <svg viewBox="-1 -1 2 2" style="transform: rotate(-0.25turn)">
@@ -128,11 +128,11 @@ func (z *ForwardView) Call() (jrpc2.Result, error) {
     </div>
     <div>
         <h3>Outgoing Channels Fees</h3>
-       {{range .Outs}}        
+       {{range $ch, $data := .Outs}}        
         <div style="clear: both; width: 100%; text-align: left;">
-            <div style="width: 20px; height: 20px; float: left; background-color: {{.Color}};"></div>
-            <div style="float: left; margin-left: 10px; width: 150px;">3716x12x0</div>
-            <div style="float: left;">83 msat</div>
+            <div style="width: 20px; height: 20px; float: left; background-color: {{$data.Color}};"></div>
+            <div style="float: left; margin-left: 10px; width: 150px;">{{$ch}}</div>
+            <div style="float: left;">{{$data.MsatFees}}</div>
         </div>
         {{end}}
         <svg viewBox="-1 -1 2 2" style="transform: rotate(-0.25turn)">
