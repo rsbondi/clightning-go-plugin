@@ -1,8 +1,7 @@
 package main
 
 import (
-	"fmt"
-
+	"github.com/niftynei/glightning/glightning"
 	"github.com/niftynei/glightning/jrpc2"
 )
 
@@ -20,15 +19,22 @@ func (z *Payment) Call() (jrpc2.Result, error) {
 	return paymentSummary()
 }
 
-func paymentSummary() (interface{}, error) {
-	payments, err := lightning.ListPayments("")
-	if err != nil {
-		return fmt.Sprintf("forward: %s\n", err.Error()), nil
-	}
+type ListSendPaysRequest struct{}
 
-	if len(payments) == 0 {
-		return "no forwarding information available", nil
-	}
+func (r *ListSendPaysRequest) Name() string {
+	return "listsendpays"
+}
 
-	return &Payment{}, nil
+func ListSendPays() ([]glightning.PaymentFields, error) {
+	var result struct {
+		Payments []glightning.PaymentFields `json:"payments"`
+	}
+	req := &ListSendPaysRequest{}
+	err := lightning.Request(req, &result)
+	return result.Payments, err
+}
+
+func paymentSummary() ([]glightning.PaymentFields, error) {
+	payments, err := ListSendPays()
+	return payments, err
 }

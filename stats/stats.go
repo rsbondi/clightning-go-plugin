@@ -8,6 +8,8 @@ import (
 )
 
 var plugin *glightning.Plugin
+var lightning *glightning.Lightning
+var myid string
 
 func main() {
 	plugin = glightning.NewPlugin(onInit)

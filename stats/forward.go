@@ -46,9 +46,6 @@ type ChannelViews struct {
 	Outs map[string]ChanSegment
 }
 
-var lightning *glightning.Lightning
-var myid string
-
 func (f *Forwards) New() interface{} {
 	return &Forwards{}
 }
