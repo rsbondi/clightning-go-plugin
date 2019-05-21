@@ -43,6 +43,10 @@ func registerMethods(p *glightning.Plugin) {
 	rpcPayment.Usage = " "
 	p.RegisterMethod(rpcPayment)
 
+	rpcPaymentView := glightning.NewRpcMethod(&PaymentView{}, "A view of stuff about payments!")
+	rpcPaymentView.LongDesc = `View of various metrics about payments `
+	rpcPaymentView.Usage = " "
+	p.RegisterMethod(rpcPaymentView)
 }
 
 func onInit(plugin *glightning.Plugin, options map[string]string, config *glightning.Config) {

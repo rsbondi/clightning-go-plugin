@@ -1,8 +1,11 @@
 package main
 
 import (
+	"bytes"
+	"fmt"
 	"github.com/niftynei/glightning/glightning"
 	"github.com/niftynei/glightning/jrpc2"
+	"html/template"
 	"sort"
 )
 
@@ -18,6 +21,85 @@ func (f *Payment) Name() string {
 
 func (z *Payment) Call() (jrpc2.Result, error) {
 	return paymentSummary()
+}
+
+type PaymentView struct{}
+
+func (f *PaymentView) New() interface{} {
+	return &PaymentView{}
+}
+
+func (f *PaymentView) Name() string {
+	return "paymentview"
+}
+
+func (z *PaymentView) Call() (jrpc2.Result, error) {
+	sum, err := paymentSummary()
+	if err != nil {
+		return fmt.Sprintf("payment: %s\n", err.Error()), nil
+	}
+
+	html := `<body>
+	<h2>Payment Summary</h2>
+	<table>
+	  <thead>
+		<tr>
+		  <th></th>
+		  <th>Completed</th>
+		  <th>Failed</th>
+		</tr>
+	  </thead>
+	  <tbody>
+		<tr>
+		  <th>%</th>
+		  <td>{{with .Complete}} {{printf "%2.1f" .Rate}} {{end}}</td>
+		  <td>{{with .Failed}} {{printf "%2.1f" .Rate}} {{end}}</td>
+		</tr>
+		<tr>
+		  <th>Count</th>
+		  <td>{{.Complete.Count}}</td>
+		  <td>{{.Failed.Count}}</td>
+		</tr>
+		<tr>
+		  <th>Min</th>
+		  <td>{{.Complete.Min}}</td>
+		  <td>{{.Failed.Min}}</td>
+		</tr>
+		<tr>
+		  <th>Max</th>
+		  <td>{{.Complete.Max}}</td>
+		  <td>{{.Failed.Max}}</td>
+		</tr>
+		<tr>
+		  <th>Average</th>
+		  <td>{{.Complete.Average}}</td>
+		  <td>{{.Failed.Average}}</td>
+		</tr>
+		<tr>
+		  <th>Median</th>
+		  <td>{{.Complete.Median}}</td>
+		  <td>{{.Failed.Median}}</td>
+		</tr>
+	  </tbody>
+	</table>
+	<style>
+	  body {
+		font-family: Arial, Helvetica, sans-serif;
+	  }
+	  table {
+	  }
+	  td, th {
+		text-align: right;
+	  }
+	</style>
+  </body>`
+
+	tmpl, err := template.New("view").Parse(html)
+	var b bytes.Buffer
+	err = tmpl.Execute(&b, sum)
+
+	return b.String(), nil
+
 }
 
 type ListSendPaysRequest struct{}
@@ -128,7 +210,7 @@ func paymentSummary() (PaymentResult, error) {
 			Median:  med(amounts["complete"]),
 			Count:   len(amounts["complete"]),
 			Total:   sumc,
-			Rate:    float32(len(amounts["complete"])) / float32(len(payments)),
+			Rate:    100 * float32(len(amounts["complete"])) / float32(len(payments)),
 			Min:     minc,
 			Max:     maxc,
 		},
@@ -137,7 +219,7 @@ func paymentSummary() (PaymentResult, error) {
 			Median:  med(amounts["failed"]),
 			Count:   len(amounts["failed"]),
 			Total:   sumf,
-			Rate:    float32(len(amounts["failed"])) / float32(len(payments)),
+			Rate:    100 * float32(len(amounts["failed"])) / float32(len(payments)),
 			Min:     minf,
 			Max:     maxf,
 		},
