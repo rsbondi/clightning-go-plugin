@@ -35,14 +35,19 @@ func ListSendPays() ([]glightning.PaymentFields, error) {
 	return result.Payments, err
 }
 
-type AvgMedian struct {
-	Average uint64 `json:"average"`
-	Median  uint64 `json:"median"`
+type PaymentDetail struct {
+	Average uint64  `json:"average"`
+	Median  uint64  `json:"median"`
+	Count   int     `json:"count"`
+	Total   uint64  `json:"total"`
+	Rate    float32 `json:"rate"`
+	Min     uint64  `json:"min"`
+	Max     uint64  `json:"max"`
 }
 
 type PaymentResult struct {
-	Complete AvgMedian `json:"complete"`
-	Failed   AvgMedian `json:"failed"`
+	Complete PaymentDetail `json:"complete"`
+	Failed   PaymentDetail `json:"failed"`
 }
 
 type ByMsat []uint64
@@ -62,6 +67,27 @@ func avg(msats []uint64) uint64 {
 	return total / uint64(len(msats))
 }
 
+func statloop(msats []uint64) (uint64, uint64, uint64) {
+	var total uint64
+	var min uint64
+	var max uint64
+	for i, msat := range msats {
+		total += msat
+		if i > 0 {
+			if msat < min {
+				min = msat
+			}
+			if msat > max {
+				max = msat
+			}
+		} else {
+			min = msat
+			max = msat
+		}
+	}
+	return total, min, max
+}
+
 func med(msats []uint64) uint64 {
 	l := len(msats)
 	if l == 0 {
@@ -79,6 +105,10 @@ func paymentSummary() (PaymentResult, error) {
 		return PaymentResult{}, err
 	}
 
+	if len(payments) == 0 {
+		return PaymentResult{}, nil
+	}
+
 	amounts := make(map[string][]uint64)
 	amounts["complete"] = []uint64{}
 	amounts["failed"] = []uint64{}
@@ -89,14 +119,27 @@ func paymentSummary() (PaymentResult, error) {
 
 	sort.Sort(ByMsat(amounts["complete"]))
 	sort.Sort(ByMsat(amounts["failed"]))
+
+	sumc, minc, maxc := statloop(amounts["complete"])
+	sumf, minf, maxf := statloop(amounts["failed"])
 	result := PaymentResult{
-		Complete: AvgMedian{
+		Complete: PaymentDetail{
 			Average: avg(amounts["complete"]),
 			Median:  med(amounts["complete"]),
+			Count:   len(amounts["complete"]),
+			Total:   sumc,
+			Rate:    float32(len(amounts["complete"])) / float32(len(payments)),
+			Min:     minc,
+			Max:     maxc,
 		},
-		Failed: AvgMedian{
+		Failed: PaymentDetail{
 			Average: avg(amounts["failed"]),
 			Median:  med(amounts["failed"]),
+			Count:   len(amounts["failed"]),
+			Total:   sumf,
+			Rate:    float32(len(amounts["failed"])) / float32(len(payments)),
+			Min:     minf,
+			Max:     maxf,
 		},
 	}
 	return result, err
