@@ -13,7 +13,7 @@ import (
 	"golang.org/x/crypto/hkdf"
 )
 
-const VERSION = "0.0.1-WIP"
+const VERSION = "0.0.1"
 
 var plugin *glightning.Plugin
 var lightning *glightning.Lightning
