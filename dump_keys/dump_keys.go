@@ -130,8 +130,8 @@ func (f *DumpKeys) New() interface{} {
 
 func registerMethods(p *glightning.Plugin) {
 	dump := glightning.NewRpcMethod(&DumpKeys{}, `Dump extended keys`)
-	dump.LongDesc = `optional parameter {include_priv} set to true if you want to include the private key, returns json object {"xpriv": "xpriv..."","xpub":"xpub..."}`
-	dump.Usage = "include_priv"
+	dump.LongDesc = "optional parameter {include_priv} set to true if you want to include the private key, returns json object {xpriv, xpub}, otherwise returns only {xpub}"
+	dump.Usage = "[include_priv]"
 	p.RegisterMethod(dump)
 
 }
