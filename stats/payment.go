@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"github.com/niftynei/glightning/glightning"
 	"github.com/niftynei/glightning/jrpc2"
 	"html/template"
 	"sort"
@@ -102,21 +101,6 @@ func (z *PaymentView) Call() (jrpc2.Result, error) {
 
 }
 
-type ListSendPaysRequest struct{}
-
-func (r *ListSendPaysRequest) Name() string {
-	return "listsendpays"
-}
-
-func ListSendPays() ([]glightning.PaymentFields, error) {
-	var result struct {
-		Payments []glightning.PaymentFields `json:"payments"`
-	}
-	req := &ListSendPaysRequest{}
-	err := lightning.Request(req, &result)
-	return result.Payments, err
-}
-
 type PaymentDetail struct {
 	Average uint64  `json:"average"`
 	Median  uint64  `json:"median"`
@@ -182,7 +166,7 @@ func med(msats []uint64) uint64 {
 }
 
 func paymentSummary() (PaymentResult, error) {
-	payments, err := ListSendPays()
+	payments, err := lightning.ListSendPaysAll() //ListSendPays()
 	if err != nil {
 		return PaymentResult{}, err
 	}

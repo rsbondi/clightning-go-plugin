@@ -30,22 +30,18 @@ func registerOptions(p *glightning.Plugin) {
 func registerMethods(p *glightning.Plugin) {
 	rpcForwards := glightning.NewRpcMethod(&Forwards{}, "A bunch of stuff about forwarding!")
 	rpcForwards.LongDesc = `Various metrics about forwarding `
-	rpcForwards.Usage = " "
 	p.RegisterMethod(rpcForwards)
 
 	rpcForwardView := glightning.NewRpcMethod(&ForwardView{}, "View of stuff about forwarding!")
 	rpcForwardView.LongDesc = `View of various metrics about forwarding `
-	rpcForwardView.Usage = " "
 	p.RegisterMethod(rpcForwardView)
 
 	rpcPayment := glightning.NewRpcMethod(&Payment{}, "A bunch of stuff about payments!")
 	rpcPayment.LongDesc = `Various metrics about payments `
-	rpcPayment.Usage = " "
 	p.RegisterMethod(rpcPayment)
 
 	rpcPaymentView := glightning.NewRpcMethod(&PaymentView{}, "A view of stuff about payments!")
 	rpcPaymentView.LongDesc = `View of various metrics about payments `
-	rpcPaymentView.Usage = " "
 	p.RegisterMethod(rpcPaymentView)
 }
 
