@@ -33,22 +33,6 @@ func main() {
 	}
 }
 
-type ListConfigsRequest struct{}
-
-func (c *ListConfigsRequest) Name() string {
-	return "listconfigs"
-}
-
-type ListConfigsResponse struct {
-	Network string `json:"network"`
-}
-
-func ListConfigs() (*ListConfigsResponse, error) {
-	result := &ListConfigsResponse{}
-	req := &ListConfigsRequest{}
-	err := lightning.Request(req, result)
-	return result, err
-}
 func onInit(plugin *glightning.Plugin, options map[string]string, config *glightning.Config) {
 	log.Printf("versiion: %s initialized", VERSION)
 
@@ -57,12 +41,12 @@ func onInit(plugin *glightning.Plugin, options map[string]string, config *glight
 
 	lightning.StartUp(config.RpcFile, config.LightningDir)
 
-	cfg, err := ListConfigs()
+	cfg, err := lightning.ListConfigs()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	switch cfg.Network {
+	switch cfg["network"] {
 	case "bitcoin":
 		bitcoinNet = &chaincfg.MainNetParams
 	case "regtest":
@@ -79,7 +63,7 @@ func registerOptions(p *glightning.Plugin) {
 }
 
 type DumpKeys struct {
-	IncludePriv bool
+	IncludePriv bool `json:"includepriv"`
 }
 
 type DumpKeysResult struct {
@@ -131,7 +115,6 @@ func (f *DumpKeys) New() interface{} {
 func registerMethods(p *glightning.Plugin) {
 	dump := glightning.NewRpcMethod(&DumpKeys{}, `Dump extended keys`)
 	dump.LongDesc = "optional parameter {include_priv} set to true if you want to include the private key, returns json object {xpriv, xpub}, otherwise returns only {xpub}"
-	dump.Usage = "[include_priv]"
 	p.RegisterMethod(dump)
 
 }
