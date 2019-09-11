@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/niftynei/glightning/glightning"
 	"github.com/niftynei/glightning/jrpc2"
@@ -21,9 +22,13 @@ func (h *ListSendpaysExt) Name() string {
 	return "listsendpaysext"
 }
 
-// TODO: msat string values
-// TODO: bolt11 ? why not in glightning ?
-// TODO: maybe this should just call multiple rpc calls instead of db query?
+var payment_status = map[int]string{
+	0: "pending",
+	1: "complete",
+	2: "failed",
+}
+
+// TODO: bolt11 ? why not in glightning ? https://github.com/niftynei/glightning/pull/21
 func (h *ListSendpaysExt) Call() (jrpc2.Result, error) {
 	dbpath := lightningdir + "/lightningd.sqlite3"
 	db, err := sql.Open("sqlite3", dbpath)
@@ -53,11 +58,14 @@ func (h *ListSendpaysExt) Call() (jrpc2.Result, error) {
 
 	for rows.Next() {
 		f := glightning.SendPayFields{}
-		err = rows.Scan(&f.Id, &f.Status, &f.Destination, &f.MilliSatoshi, &f.PaymentHash, &f.CreatedAt, &f.PaymentPreimage, &f.MilliSatoshiSent)
+		var status int
+		err = rows.Scan(&f.Id, &status, &f.Destination, &f.MilliSatoshi, &f.PaymentHash, &f.CreatedAt, &f.PaymentPreimage, &f.MilliSatoshiSent)
 		if err != nil {
 			log.Printf("cannot read database row: %s", err.Error())
 		}
-
+		f.AmountMsat = fmt.Sprintf("%dmsat", f.MilliSatoshi)
+		f.AmountSentMsat = fmt.Sprintf("%dmsat", f.MilliSatoshiSent)
+		f.Status = payment_status[status]
 		result.Payments = append(result.Payments, f)
 	}
 
