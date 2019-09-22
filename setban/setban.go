@@ -11,7 +11,7 @@ import (
 type SetBan struct {
 	Id      string `json:"id"`
 	Command string `json:"command"`
-	Bantime int    `json:"bantime,omitempty"`
+	Bantime int64  `json:"bantime,omitempty"`
 }
 
 func (b *SetBan) New() interface{} {
@@ -28,10 +28,16 @@ func (b *SetBan) Call() (jrpc2.Result, error) {
 	if b.Command == "add" {
 		log.Printf("adding ban for %s", b.Id)
 		now := time.Now()
+		var banfor int64
+		if b.Bantime != 0 {
+			banfor = b.Bantime
+		} else {
+			banfor = DEFAULT_BAN_TIME
+		}
 		ban := &Banned{
 			Id:          b.Id,
 			BanCreated:  now.Unix(),
-			BannedUntil: now.Unix() + DEFAULT_BAN_TIME,
+			BannedUntil: now.Unix() + banfor,
 		}
 
 		err := lightning.Disconnect(b.Id, true)
@@ -70,9 +76,24 @@ func (b *ListBanned) Call() (jrpc2.Result, error) {
 func listbanned() []*Banned {
 	bans := make([]*Banned, 0)
 	for _, v := range banned {
-		bans = append(bans, v)
+		if checkban(v.Id) {
+			bans = append(bans, v)
+		}
 	}
 	return bans
+}
+
+func checkban(id string) bool {
+	if _, ok := banned[id]; ok {
+		now := time.Now().Unix()
+		if now > banned[id].BannedUntil {
+			log.Printf("deleting ban for %s", id)
+			delete(banned, id)
+			return false
+		}
+		return true
+	}
+	return false
 }
 
 var lightning *glightning.Lightning
@@ -114,7 +135,7 @@ func registerMethods(p *glightning.Plugin) {
 
 func OnConnect(c *glightning.ConnectEvent) {
 	log.Printf("connect called: id %s at %s:%d", c.PeerId, c.Address.Addr, c.Address.Port)
-	if _, ok := banned[c.PeerId]; ok {
+	if checkban(c.PeerId) {
 		err := lightning.Disconnect(c.PeerId, true)
 		if err != nil {
 			log.Printf("disconnect error: %s", err.Error())
