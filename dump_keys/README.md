@@ -5,7 +5,7 @@ clightning node via rpc command
 
 #### usage
 
-add plugin to command line or config file.
+add [plugin](../README.md#general-plugin-installation) to command line or config file.
 
 `lightning-cli dump_keys` to get xpub
 

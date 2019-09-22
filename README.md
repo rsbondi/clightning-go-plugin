@@ -20,6 +20,12 @@ Export xpriv/xpub
 
 [more](dump_keys/README.md)
 
+### setban
+
+ban peers for specified time
+
+[more](setban/README.md)
+
 
 ## General Plugin Installation
 
