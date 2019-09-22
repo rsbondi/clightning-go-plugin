@@ -102,12 +102,12 @@ func onInit(plugin *glightning.Plugin, options map[string]string, config *glight
 func registerMethods(p *glightning.Plugin) {
 	rpcBan := glightning.NewRpcMethod(&SetBan{}, "Ban peers from connecting")
 	rpcBan.LongDesc = `add or remove a ban for a peer by {id} {command(add|remove)} with optional {bantime}`
-	rpcBan.Category = "peers"
+	rpcBan.Category = "network"
 	p.RegisterMethod(rpcBan)
 
 	rpcListBanned := glightning.NewRpcMethod(&ListBanned{}, "List of banned peers")
 	rpcListBanned.LongDesc = `shows list`
-	rpcListBanned.Category = "peers"
+	rpcListBanned.Category = "network"
 	p.RegisterMethod(rpcListBanned)
 
 }
