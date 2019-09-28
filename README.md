@@ -26,6 +26,11 @@ ban peers for specified time
 
 [more](setban/README.md)
 
+### multifund
+
+fund multiple channels with single transaction
+
+[more](multifund/README.md)
 
 ## General Plugin Installation
 
