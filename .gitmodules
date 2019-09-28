@@ -1,0 +1,3 @@
+[submodule "multifund"]
+	path = multifund
+	url = https://github.com/rsbondi/multifund.git
