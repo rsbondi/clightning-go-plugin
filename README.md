@@ -30,7 +30,7 @@ ban peers for specified time
 
 fund multiple channels with single transaction
 
-[more](multifund/README.md)
+[more](https://github.com/rsbondi/multifund/README.md)
 
 ## General Plugin Installation
 
