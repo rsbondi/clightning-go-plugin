@@ -1,12 +1,16 @@
 package main
 
 import (
+	"encoding/json"
 	"github.com/niftynei/glightning/glightning"
 	"github.com/niftynei/glightning/jrpc2"
+	"io/ioutil"
 	"log"
 	"os"
 	"time"
 )
+
+var banfile string
 
 type SetBan struct {
 	Id      string `json:"id"`
@@ -50,6 +54,8 @@ func (b *SetBan) Call() (jrpc2.Result, error) {
 		delete(banned, b.Id)
 	}
 
+	bad, _ := json.Marshal(banned)
+	ioutil.WriteFile(banfile, bad, 0644)
 	return listbanned(), nil
 }
 
@@ -118,6 +124,12 @@ func main() {
 func onInit(plugin *glightning.Plugin, options map[string]string, config *glightning.Config) {
 	log.Printf("successfully init'd! %s\n", config.RpcFile)
 	lightning.StartUp(config.RpcFile, config.LightningDir)
+	banfile = config.LightningDir + "/.banned.json"
+	if _, err := os.Stat(banfile); err == nil {
+		bans, _ := ioutil.ReadFile(banfile)
+		json.Unmarshal(bans, &banned)
+	}
+
 }
 
 func registerMethods(p *glightning.Plugin) {
