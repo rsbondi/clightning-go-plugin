@@ -13,7 +13,7 @@ import (
 	"strings"
 )
 
-const VERSION = "0.0.1"
+const VERSION = "0.0.2"
 
 var plugin *glightning.Plugin
 var remote *RemoteRPC
@@ -22,7 +22,6 @@ var local net.Conn
 type RemoteRPC struct {
 	Username string
 	Password string
-	Host     string
 	Port     string
 	RPCFile  string
 }
@@ -37,7 +36,6 @@ func NewRemoteRPC(options map[string]string) *RemoteRPC {
 	return &RemoteRPC{
 		Username: options["remote-user"],
 		Password: options["remote-password"],
-		Host:     options["remote-host"],
 		Port:     options["remote-port"],
 		RPCFile:  options["rpc-file"],
 	}
@@ -98,7 +96,7 @@ func handleRequest(w http.ResponseWriter, req *http.Request) {
 		r, err := local.Read(unix2http)
 		if err != nil {
 			if err != io.EOF {
-				log.Printf("RPC error to clightning:", err)
+				log.Printf("RPC error to clightning: %s", err.Error())
 			}
 			break
 		}
@@ -125,9 +123,11 @@ func onInit(plugin *glightning.Plugin, options map[string]string, config *glight
 	remote = NewRemoteRPC(options)
 	http.HandleFunc("/", handleRequest)
 
-	if options["remote-cert"] != " " {
-		log.Fatal(http.ListenAndServeTLS(":"+remote.Port, options["remote-cert"], options["remote-key"], nil))
-	} else {
-		log.Fatal(http.ListenAndServe(":"+remote.Port, nil))
-	}
+	go (func() {
+		if options["remote-cert"] != " " {
+			log.Fatal(http.ListenAndServeTLS(":"+remote.Port, options["remote-cert"], options["remote-key"], nil))
+		} else {
+			log.Fatal(http.ListenAndServe(":"+remote.Port, nil))
+		}
+	})()
 }
