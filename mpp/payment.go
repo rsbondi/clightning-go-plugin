@@ -44,10 +44,11 @@ func paymentSummary() ([]*SendPayFieldsMpp, error) {
 	resultMap := make(map[string]*SendPayFieldsMpp)
 
 	for _, p := range payments {
-		pay, ok := resultMap[p.PaymentHash]
+		identifier := fmt.Sprintf("%s-%s", p.PaymentHash, p.Status)
+		pay, ok := resultMap[identifier]
 		if !ok {
-			resultMap[p.PaymentHash] = &SendPayFieldsMpp{}
-			pay = resultMap[p.PaymentHash]
+			resultMap[identifier] = &SendPayFieldsMpp{}
+			pay = resultMap[identifier]
 			pay.PaymentHash = p.PaymentHash
 		}
 
