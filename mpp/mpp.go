@@ -23,8 +23,11 @@ func main() {
 }
 
 func registerMethods(p *glightning.Plugin) {
-	rpcPayment := glightning.NewRpcMethod(&PaymentMpp{}, "A bunch of stuff about payments!")
-	rpcPayment.LongDesc = `Various metrics about payments `
+	rpcPayment := glightning.NewRpcMethod(&PaymentMpp{}, "Group multi part payments!")
+	rpcPayment.LongDesc = `This is an alternative to listsendpays to accomodate multi part payments.
+Instead of showing all parts, they are grouped together by payment_hash and status.
+It will default to showing only completed payments with the omptional boolean parameter {includeall} 
+which will also include pending and failed`
 	p.RegisterMethod(rpcPayment)
 
 }
