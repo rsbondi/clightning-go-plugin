@@ -7,18 +7,20 @@ import (
 	"github.com/niftynei/glightning/jrpc2"
 )
 
-type PaymentMpp struct{}
+type PaymentMpp struct {
+	IncludeNonComplete bool `json:"includenoncomplete"`
+}
 
-func (f *PaymentMpp) New() interface{} {
+func (p *PaymentMpp) New() interface{} {
 	return &PaymentMpp{}
 }
 
-func (f *PaymentMpp) Name() string {
+func (p *PaymentMpp) Name() string {
 	return "mpp_payments"
 }
 
-func (z *PaymentMpp) Call() (jrpc2.Result, error) {
-	return paymentSummary()
+func (p *PaymentMpp) Call() (jrpc2.Result, error) {
+	return paymentSummary(p.IncludeNonComplete)
 }
 
 type SendPayFieldsMpp struct {
@@ -28,7 +30,7 @@ type SendPayFieldsMpp struct {
 	Parts int `json:"parts,omitempty"`
 }
 
-func paymentSummary() ([]*SendPayFieldsMpp, error) {
+func paymentSummary(includeAll bool) ([]*SendPayFieldsMpp, error) {
 	payments, err := lightning.ListSendPaysAll()
 	if err != nil {
 		r := []*SendPayFieldsMpp{}
@@ -44,6 +46,9 @@ func paymentSummary() ([]*SendPayFieldsMpp, error) {
 	resultMap := make(map[string]*SendPayFieldsMpp)
 
 	for _, p := range payments {
+		if !includeAll && p.Status != "complete" {
+			continue
+		}
 		identifier := fmt.Sprintf("%s-%s", p.PaymentHash, p.Status)
 		pay, ok := resultMap[identifier]
 		if !ok {
