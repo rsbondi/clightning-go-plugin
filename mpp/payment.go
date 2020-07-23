@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/niftynei/glightning/glightning"
 	"github.com/niftynei/glightning/jrpc2"
 )
@@ -20,6 +22,8 @@ func (z *PaymentMpp) Call() (jrpc2.Result, error) {
 }
 
 type SendPayFieldsMpp struct {
+	Id                 uint64 `json:"id,omitempty"`
+	AmountMilliSatoshi string `json:"amount_msat,omitempty"`
 	glightning.SendPayFields
 	Parts int `json:"parts,omitempty"`
 }
@@ -58,13 +62,14 @@ func paymentSummary() ([]*SendPayFieldsMpp, error) {
 			pay.PaymentPreimage = p.PaymentPreimage
 		}
 
+		pay.MilliSatoshiSentRaw += p.MilliSatoshiSentRaw
 		if multi {
 			pay.Parts++
+			pay.MilliSatoshiSent = fmt.Sprintf("%dmsat", pay.MilliSatoshiSentRaw)
 		} else {
 			pay.Id = p.Id
+			pay.MilliSatoshiSent = p.MilliSatoshiSent
 		}
-		pay.MilliSatoshiSentRaw += p.MilliSatoshiSentRaw
-		pay.MilliSatoshiSent = p.MilliSatoshiSent
 		pay.Status = p.Status
 		pay.CreatedAt = p.CreatedAt
 
