@@ -118,7 +118,7 @@ func registerOptions(p *glightning.Plugin) {
 }
 
 func onInit(plugin *glightning.Plugin, options map[string]glightning.Option, config *glightning.Config) {
-	log.Printf("versiion: %s initialized for port %s\n", VERSION, options["remote-port"])
+	log.Printf("versiion: %s initialized for port %s\n", VERSION, options["remote-port"].GetValue().(string))
 	rpcfile := fmt.Sprintf("%s/%s", config.LightningDir, config.RpcFile)
 	remote = NewRemoteRPC(options, rpcfile)
 	http.HandleFunc("/", handleRequest)
