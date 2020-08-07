@@ -32,12 +32,12 @@ type RpcResult struct {
 	Result  interface{} `json:"result"`
 }
 
-func NewRemoteRPC(options map[string]string) *RemoteRPC {
+func NewRemoteRPC(options map[string]glightning.Option, rpcfile string) *RemoteRPC {
 	return &RemoteRPC{
-		Username: options["remote-user"],
-		Password: options["remote-password"],
-		Port:     options["remote-port"],
-		RPCFile:  options["rpc-file"],
+		Username: options["remote-user"].GetValue().(string),
+		Password: options["remote-password"].GetValue().(string),
+		Port:     options["remote-port"].GetValue().(string),
+		RPCFile:  rpcfile,
 	}
 }
 
@@ -117,15 +117,15 @@ func registerOptions(p *glightning.Plugin) {
 	p.RegisterOption(glightning.NewOption("remote-key", "Server key", " "))
 }
 
-func onInit(plugin *glightning.Plugin, options map[string]string, config *glightning.Config) {
-	log.Printf("versiion: "+VERSION+" initialized for port %s\n", options["remote-port"])
-	options["rpc-file"] = fmt.Sprintf("%s/%s", config.LightningDir, config.RpcFile)
-	remote = NewRemoteRPC(options)
+func onInit(plugin *glightning.Plugin, options map[string]glightning.Option, config *glightning.Config) {
+	log.Printf("versiion: %s initialized for port %s\n", VERSION, options["remote-port"])
+	rpcfile := fmt.Sprintf("%s/%s", config.LightningDir, config.RpcFile)
+	remote = NewRemoteRPC(options, rpcfile)
 	http.HandleFunc("/", handleRequest)
 
 	go (func() {
-		if options["remote-cert"] != " " {
-			log.Fatal(http.ListenAndServeTLS(":"+remote.Port, options["remote-cert"], options["remote-key"], nil))
+		if options["remote-cert"].GetValue().(string) != " " {
+			log.Fatal(http.ListenAndServeTLS(":"+remote.Port, options["remote-cert"].GetValue().(string), options["remote-key"].GetValue().(string), nil))
 		} else {
 			log.Fatal(http.ListenAndServe(":"+remote.Port, nil))
 		}
