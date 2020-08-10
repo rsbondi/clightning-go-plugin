@@ -32,12 +32,6 @@ fund multiple channels with single transaction
 
 [more](https://github.com/rsbondi/multifund)
 
-### mpp
-
-groups multi part payments together as an alternative to `listsendpays` so you will have just one listing per payment rather than per part.
-
-[more](mpp/README.md)
-
 ## General Plugin Installation
 
 [download and install go](https://golang.org/dl/)
