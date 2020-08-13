@@ -45,7 +45,7 @@ func registerMethods(p *glightning.Plugin) {
 	p.RegisterMethod(rpcPaymentView)
 }
 
-func onInit(plugin *glightning.Plugin, options map[string]string, config *glightning.Config) {
+func onInit(plugin *glightning.Plugin, options map[string]glightning.Option, config *glightning.Config) {
 	log.Printf("successfully init'd! %s\n", config.RpcFile)
 	lightning.StartUp(config.RpcFile, config.LightningDir)
 	info, err := lightning.GetInfo()

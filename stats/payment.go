@@ -180,7 +180,7 @@ func paymentSummary() (PaymentResult, error) {
 	amounts["failed"] = []uint64{}
 
 	for _, p := range payments {
-		amounts[p.Status] = append(amounts[p.Status], p.MilliSatoshi)
+		amounts[p.Status] = append(amounts[p.Status], p.AmountMilliSatoshiRaw)
 	}
 
 	sort.Sort(ByMsat(amounts["complete"]))
