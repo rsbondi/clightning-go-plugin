@@ -191,6 +191,9 @@ func forwardSummary() (interface{}, error) {
 	var totalfees uint64
 	var totalforwards uint64
 	for _, f := range forwards {
+		if f.Status == "local_failed" {
+			continue
+		}
 		chins[f.InChannel] = append(chins[f.InChannel], f)
 		chouts[f.OutChannel] = append(chouts[f.OutChannel], f)
 		if f.Status == "settled" {
