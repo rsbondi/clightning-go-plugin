@@ -2,12 +2,14 @@ This plugin takes no additional options so to use, start `lightningd` with `--pl
 
 `lightningd --plugin=path/to/plugin`
 
+## Forwards
+
 This will add `forwardstats` and `forwardview` cli/rpc commands that takes no arguments
 
 `forwardview` returns a simple, inflexible html view with pie charts and fee info, mainly
 geared toward [a mobile app](https://github.com/rsbondi/clightning-mobile) customization
 
-`forwardstats` will return something like the following
+`forwardstats` result
 
 ```json
 {
@@ -51,4 +53,72 @@ of forwarding activity has gone through the channel.
 
 Additionally, totals are displayed at the end.
 
-**Suggestions welcome for additional stats that may be useful to implement.**
+## Payments
+
+This will also add `paymentstats` and `paymentview` cli/rpc commands that takes no arguments
+
+`paymentstats` result
+
+```json
+{
+    "complete": {
+      "average": 5587785,
+      "median": 5941000,
+      "count": 14,
+      "total": 78229000,
+      "rate": 25,
+      "min": 1624000,
+      "max": 9845000
+    },
+    "failed": {
+      "average": 2098273,
+      "median": 572534,
+      "count": 42,
+      "total": 88127476,
+      "rate": 75,
+      "min": 48608,
+      "max": 9831000
+    }
+  }
+```
+
+## Channel activity
+
+`channel_activity` command will show how active a channel is, a channel may recieve, send or forward payments.  This provides the aggregate of all successful events. 
+
+`channel_activity` results
+
+```json
+[
+    {
+      "short_channel_id": "560x1x0",
+      "msatoshi": 3642026,
+      "direction": "receive"
+    },
+    {
+      "short_channel_id": "560x1x0",
+      "msatoshi": 63174198,
+      "direction": "send"
+    },
+    {
+      "short_channel_id": "560x3x0",
+      "msatoshi": 7332147,
+      "direction": "receive"
+    },
+    {
+      "short_channel_id": "560x3x0",
+      "msatoshi": 52883940,
+      "direction": "send"
+    },
+    {
+      "short_channel_id": "560x4x0",
+      "msatoshi": 102357847,
+      "direction": "receive"
+    },
+    {
+      "short_channel_id": "560x4x0",
+      "msatoshi": 47073072,
+      "direction": "send"
+    }
+  ]
+```

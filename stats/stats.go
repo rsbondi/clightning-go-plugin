@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/niftynei/glightning/glightning"
 )
@@ -10,6 +11,7 @@ import (
 var plugin *glightning.Plugin
 var lightning *glightning.Lightning
 var myid string
+var dbPath string
 
 func main() {
 	plugin = glightning.NewPlugin(onInit)
@@ -43,11 +45,16 @@ func registerMethods(p *glightning.Plugin) {
 	rpcPaymentView := glightning.NewRpcMethod(&PaymentView{}, "A view of stuff about payments!")
 	rpcPaymentView.LongDesc = `View of various metrics about payments `
 	p.RegisterMethod(rpcPaymentView)
+
+	rpcActivityView := glightning.NewRpcMethod(&ChannelActivity{}, "A view of stuff about channels!")
+	rpcActivityView.LongDesc = `How sats flow through active channels`
+	p.RegisterMethod(rpcActivityView)
 }
 
 func onInit(plugin *glightning.Plugin, options map[string]glightning.Option, config *glightning.Config) {
 	log.Printf("successfully init'd! %s\n", config.RpcFile)
 	lightning.StartUp(config.RpcFile, config.LightningDir)
+	dbPath = filepath.Join(config.LightningDir, "lightningd.sqlite3")
 	info, err := lightning.GetInfo()
 
 	if err != nil {
