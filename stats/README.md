@@ -84,41 +84,47 @@ This will also add `paymentstats` and `paymentview` cli/rpc commands that takes 
 
 ## Channel activity
 
-`channel_activity` command will show how active a channel is, a channel may recieve, send or forward payments.  This provides the aggregate of all successful events. 
+`channel_activity` command will show how active channels are, a channel may recieve, send or forward payments.  This provides the aggregate of all successful events. Currently this only works with the defualt sqlite database.
 
 `channel_activity` results
 
 ```json
 [
-    {
-      "short_channel_id": "560x1x0",
-      "msatoshi": 3642026,
-      "direction": "receive"
-    },
-    {
-      "short_channel_id": "560x1x0",
-      "msatoshi": 63174198,
-      "direction": "send"
-    },
-    {
-      "short_channel_id": "560x3x0",
-      "msatoshi": 7332147,
-      "direction": "receive"
-    },
-    {
-      "short_channel_id": "560x3x0",
-      "msatoshi": 52883940,
-      "direction": "send"
-    },
-    {
-      "short_channel_id": "560x4x0",
-      "msatoshi": 102357847,
-      "direction": "receive"
-    },
-    {
-      "short_channel_id": "560x4x0",
-      "msatoshi": 47073072,
-      "direction": "send"
-    }
-  ]
+  {
+    "short_channel_id": "560x1x0",
+    "count": 3,
+    "msatoshi": 3642026,
+    "direction": "receive"
+  },
+  {
+    "short_channel_id": "560x1x0",
+    "count": 14,
+    "msatoshi": 63174198,
+    "direction": "send"
+  },
+  {
+    "short_channel_id": "560x3x0",
+    "count": 2,
+    "msatoshi": 7332147,
+    "direction": "receive"
+  },
+  {
+    "short_channel_id": "560x3x0",
+    "count": 8,
+    "msatoshi": 52883940,
+    "direction": "send"
+  },
+  {
+    "short_channel_id": "560x4x0",
+    "count": 17,
+    "msatoshi": 102357847,
+    "direction": "receive"
+  },
+  {
+    "short_channel_id": "560x4x0",
+    "count": 8,
+    "msatoshi": 47073072,
+    "direction": "send"
+  }
+]
 ```

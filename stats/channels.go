@@ -10,6 +10,7 @@ import (
 
 type ChannelActivity struct {
 	Short_Channel_id string `json:"short_channel_id"`
+	Actions          int    `json:"count"`
 	Msatoshi         int64  `json:"msatoshi"`
 	Direction        string `json:"direction"`
 }
@@ -37,6 +38,7 @@ func activitySummary() (interface{}, error) {
 	rows, err := db.Query(
 		`SELECT 
 			c.short_channel_id, 
+			count(h.msatoshi) actions,
 			sum(h.msatoshi), 
       CASE h.direction
         WHEN 1 THEN 'send'
